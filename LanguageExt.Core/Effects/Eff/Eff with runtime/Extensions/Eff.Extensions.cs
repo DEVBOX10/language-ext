@@ -41,19 +41,6 @@ public static partial class EffExtensions
     public static Fin<(A Value, RT Runtime)> RunRT<RT, A>(this K<Eff<RT>, A> ma, RT env)
         where RT : HasIO<RT> =>
         ma.As().RunRT(env, env.EnvIO);
-
-    /// <summary>
-    /// Invoke the effect
-    /// </summary>
-    /// <remarks>
-    /// This is labelled 'unsafe' because it can throw an exception, whereas
-    /// `Run` will capture any errors and return a `Fin` type.
-    /// </remarks>
-    [Pure, MethodImpl(Opt.Default)]
-    public static (A Value, RT Runtime) RunUnsafe<RT, A>(this K<Eff<RT>, A> ma, RT env) 
-        where RT : HasIO<RT> =>
-        ma.As().RunUnsafe(env, env.EnvIO);
-    
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

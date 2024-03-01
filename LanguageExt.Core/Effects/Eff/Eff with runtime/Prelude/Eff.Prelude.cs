@@ -10,6 +10,12 @@ namespace LanguageExt;
 public static partial class Prelude
 {
     /// <summary>
+    /// Effect that always returns the acquired resources
+    /// </summary>
+    public static Eff<RT, Resources> resourcesEff<RT>() =>
+        new (StateT.lift<RT, ResourceT<IO>, Resources>(ResourceT.resources<IO>()));
+    
+    /// <summary>
     /// Timeout operation if it takes too long
     /// </summary>
     [Pure]
@@ -77,10 +83,16 @@ public static partial class Prelude
     public static Eff<OuterRT, A> localEff<OuterRT, InnerRT, A>(Func<OuterRT, InnerRT> f, Eff<InnerRT, A> ma) =>
         (from irt in StateM.gets<Eff<OuterRT>, OuterRT, InnerRT>(f)
          from eio in Resource.use<Eff<OuterRT>, EnvIO>(envIO.Map(e => e.LocalCancel))
-         let ires = ma.RunUnsafe(irt, eio)
+         let ires = ma.RunRT(irt, eio)
          from ___ in Resource.release<Eff<OuterRT>, EnvIO>(eio)
-         select ires.Value)
-        .As();
+         from res in ires switch
+                     {
+                         Fin.Succ<(A Value, InnerRT _)> (var pair) => LanguageExt.Eff<OuterRT, A>.Pure(pair.Value),
+                         Fin.Fail<(A Value, InnerRT _)> (var erro) => LanguageExt.Eff<OuterRT, A>.Fail(erro),
+                         _                                         => throw new NotSupportedException()
+                     }
+         select res)
+       .As();
  
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

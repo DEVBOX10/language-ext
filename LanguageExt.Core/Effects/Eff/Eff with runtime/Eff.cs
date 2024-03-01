@@ -1031,7 +1031,7 @@ public record Eff<RT, A>(StateT<RT, ResourceT<IO>, A> effect) : K<Eff<RT>, A>
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Invoking
+    // Invoking of the effect
     //
 
     /// <summary>
@@ -1050,10 +1050,30 @@ public record Eff<RT, A>(StateT<RT, ResourceT<IO>, A> effect) : K<Eff<RT>, A>
     /// <remarks>
     /// Returns the result value only 
     /// </remarks>
+    [Pure, MethodImpl(Opt.Default)]
+    public Fin<A> Run(RT env, Resources resources, EnvIO envIO) =>
+        RunRT(env, resources, envIO).Map(x => x.Value);    
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    /// <remarks>
+    /// Returns the result value only 
+    /// </remarks>
     [MethodImpl(Opt.Default)]
     public Unit RunUnit(RT env, EnvIO envIO) =>
-        ignore(RunRT(env, envIO).Map(x => x.Value));    
-    
+        ignore(RunRT(env, envIO).Map(x => x.Value));
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    /// <remarks>
+    /// Returns the result value only 
+    /// </remarks>
+    [MethodImpl(Opt.Default)]
+    public Unit RunUnit(RT env, Resources resources, EnvIO envIO) =>
+        ignore(RunRT(env, resources, envIO).Map(x => x.Value));
+
     /// <summary>
     /// Invoke the effect
     /// </summary>
@@ -1063,35 +1083,23 @@ public record Eff<RT, A>(StateT<RT, ResourceT<IO>, A> effect) : K<Eff<RT>, A>
     [Pure, MethodImpl(Opt.Default)]
     public Fin<(A Value, RT Runtime)> RunRT(RT env, EnvIO envIO)
     {
-        try
-        {
-            return RunUnsafe(env, envIO);
-        }
-        catch (ErrorException e)
-        {
-            return e.ToError();
-        }
-        catch(Exception e)
-        {
-            var e1 = Error.New(e);
-            return Fin<(A Value, RT Runtime)>.Fail(e1);
-        }
+        using var resources = new Resources();
+        return RunRT(env, resources, envIO);
     }
 
     /// <summary>
     /// Invoke the effect
     /// </summary>
     /// <remarks>
-    /// This is labelled 'unsafe' because it can throw an exception, whereas
-    /// `Run` will capture any errors and return a `Fin` type.
+    /// Returns the result value and the runtime (which carries state) 
     /// </remarks>
     [Pure, MethodImpl(Opt.Default)]
-    public (A Value, RT Runtime) RunUnsafe(RT env, EnvIO envIO) => 
+    public Fin<(A Value, RT Runtime)> RunRT(RT env, Resources resources, EnvIO envIO) =>
         effect
-          .Run(env).As()
-          .Run().As()
-          .Run(envIO);
-    
+           .Run(env).As()
+           .Run(resources).As()
+           .Run(envIO);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Obsolete

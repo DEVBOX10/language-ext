@@ -132,12 +132,14 @@ public static class Testing
                  from y in m2
                  select $"{p} {y} {j}";
 
-        var value = m0.Run().As()
+        using var resources = new Resources();
+        var value = m0.Run(resources).As()
                       .Run("Hello").As();
     }
    
     public static void Test8()
     {
+        using var resources = new Resources();
         var m1 = OptionT.lift(ReaderT<string>.lift(ResourceT.lift(IO.Pure(123))));
         var m2 = OptionT.lift(ReaderT<string>.lift(ResourceT.lift(IO.Pure(123))));
 
@@ -155,7 +157,7 @@ public static class Testing
         var value = m0.Match(Some: v => $"foo {v}", 
                              None: () => "bar").As()
                       .Run("Paul").As()
-                      .Run(); 
+                      .Run(resources); 
 
         OptionT<ReaderT<Env, ResourceT<IO>>, Env> ask<Env>() =>
             OptionT.lift(ReaderT.ask<ResourceT<IO>, Env>()); 

@@ -330,7 +330,7 @@ namespace Issues
              from w in Calculate(x, y, z)
              select w)
             .IfLeft(0)
-            .As().Run();
+            .As().Run().ThrowIfFail();
     }
 
     public class Issue376_2

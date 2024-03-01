@@ -46,16 +46,4 @@ public class Eff :
 
     static K<Eff, A> StateM<Eff, MinRT>.Gets<A>(Func<MinRT, A> f) => 
         new Eff<A>(StateM.gets<Eff<MinRT>, MinRT, A>(f).As());
-
-    static K<Eff, A> Monad<Eff>.LiftIO<A>(IO<A> ma) =>
-        Eff<A>.LiftIO(ma);
-    
-    static K<Eff, B> Monad<Eff>.WithRunInIO<A, B>(Func<Func<K<Eff, A>, IO<A>>, IO<B>> inner) =>
-        Eff<B>.LiftIO(
-            env => inner(ma => ma.As()
-                                 .effect
-                                 .effect     
-                                 .Run(env).As()
-                                 .Run().As()
-                                 .Map(p => p.Value)));
 }

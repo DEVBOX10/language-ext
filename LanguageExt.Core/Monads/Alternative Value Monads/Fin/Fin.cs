@@ -121,6 +121,15 @@ public abstract record Fin<A> :
     public abstract Fin<B> BiBind<B>(Func<A, Fin<B>> Succ, Func<Error, Fin<B>> Fail);
 
     /// <summary>
+    /// Maps the error in the structure
+    /// </summary>
+    /// <param name="Fail">Map function</param>
+    /// <returns>Mapped structure</returns>
+    [Pure]
+    public Fin<A> MapFail(Func<Error, Error> Fail) =>
+        BiMap(x => x, Fail);
+
+    /// <summary>
     /// Monoid empty
     /// </summary>
     [Pure]

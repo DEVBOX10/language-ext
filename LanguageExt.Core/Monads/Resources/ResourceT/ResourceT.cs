@@ -215,17 +215,6 @@ public record ResourceT<M, A>(Func<Resources, K<M, A>> runResource) : K<Resource
     /// Run the resource monad and automatically clean up the resources after 
     /// </summary>
     /// <returns>Bound monad</returns>
-    public K<M, A> Run(EnvIO envIO)
-    {
-        using var env = new Resources();
-        var       mio = MonadIO.toIO(this).As();
-        return M.Map(m => m.Run(envIO),  mio.runResource(env));
-    }
-
-    /// <summary>
-    /// Run the resource monad and automatically clean up the resources after 
-    /// </summary>
-    /// <returns>Bound monad</returns>
-    public K<M, A> Run() =>
-        Run(EnvIO.New());
+    public K<M, A> Run(Resources resources) =>
+        runResource(resources);
 }

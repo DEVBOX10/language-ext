@@ -69,6 +69,48 @@ public record Eff<A>(Eff<MinRT, A> effect) :
     public Unit RunUnit() =>
         ignore(Run(new MinRT()));
 
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [Pure, MethodImpl(Opt.Default)]
+    public Fin<A> Run(MinRT env, Resources resources) =>
+        effect.Run(env, resources, EnvIO.New());
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [Pure, MethodImpl(Opt.Default)]
+    public Fin<A> Run(Resources resources, EnvIO envIO) =>
+        Run(new MinRT(envIO), resources);
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [Pure, MethodImpl(Opt.Default)]
+    public Fin<A> Run(Resources resources) =>
+        Run(new MinRT(), resources);
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [MethodImpl(Opt.Default)]
+    public Unit RunUnit(MinRT env, Resources resources, EnvIO envIO) =>
+        ignore(effect.Run(env, resources, envIO));
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [MethodImpl(Opt.Default)]
+    public Unit RunUnit(Resources resources, EnvIO envIO) =>
+        ignore(Run(new MinRT(envIO), resources));
+
+    /// <summary>
+    /// Invoke the effect
+    /// </summary>
+    [MethodImpl(Opt.Default)]
+    public Unit RunUnit(Resources resources) =>
+        ignore(Run(new MinRT(), resources));
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Timeout
@@ -747,8 +789,14 @@ public record Eff<A>(Eff<MinRT, A> effect) :
     {
         var e = effect;
         return (from eio in Eff<RT, EnvIO>.LiftIO(envIO)
-                let ires = e.RunUnsafe(new MinRT(eio))
-                select ires.Value).As();
+                from res in resourcesEff<RT>()
+                from fin in e.Run(new MinRT(eio), res, eio) switch
+                           {
+                               Fin.Succ<A> (var x) => Eff<RT, A>.Pure(x),
+                               Fin.Fail<A> (var x) => Eff<RT, A>.Fail(x),
+                               _ => throw new NotSupportedException()
+                           }
+                select fin).As();
     }
 
     /// <summary>
@@ -1021,17 +1069,6 @@ public record Eff<A>(Eff<MinRT, A> effect) :
 
     static K<Eff<A>, T> StateM<Eff<A>, A>.Gets<T>(Func<A, T> f) =>
         new Eff<A, T>(StateT.gets<ResourceT<IO>, A, T>(f));
-
-    static K<Eff<A>, T> Monad<Eff<A>>.LiftIO<T>(IO<T> ma) =>
-        new Eff<A, T>(StateT.liftIO<A, ResourceT<IO>, T>(ma));
-    
-    static K<Eff<A>, U> Monad<Eff<A>>.WithRunInIO<T, U>(Func<Func<K<Eff<A>, T>, IO<T>>, IO<U>> inner) =>
-        Eff<A, U>.LiftIO(
-            env => inner(ma => ma.As()
-                                 .effect
-                                 .Run(env).As()
-                                 .Run().As()
-                                 .Map(p => p.Value)));
 
     public override string ToString() => 
         "Eff";

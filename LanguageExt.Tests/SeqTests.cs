@@ -659,7 +659,7 @@ public class SeqTests
                              _                                        => false
                          };
 
-        Assert.True(res.Run());
+        Assert.True(res.Run().ThrowIfFail());
     }
 
     static EitherT<string, IO, int> DoDelay(int seconds)
